@@ -27,29 +27,20 @@ import pydeck as pdk
 # Change this to your real file name
 DATA_FILE = "NY-House-Dataset.csv"
 
-def load_data(filename="NY-House-Dataset.csv"):  # #[FUNC2P] function with default parameter
-    """Load the New York housing CSV file."""
+def load_data(filename="NY-House-Dataset.csv"):
     df = pd.read_csv(filename)
 
-    # You MUST make sure these column names match your CSV.
-    # If your columns are different, rename them here.
-    # Example names we expect:
-    #   "borough", "neighborhood", "sale_price", "latitude", "longitude"
-    # If necessary:
-    # df = df.rename(columns={
-    #     "BOROUGH": "borough",
-    #     "NEIGHBORHOOD": "neighborhood",
-    #     "SALE PRICE": "sale_price",
-    #     "LAT": "latitude",
-    #     "LON": "longitude"
-    # })
+    df = df.rename(columns={
+        "BOROUGH": "borough",
+        "NEIGHBORHOOD": "neighborhood",
+        "SALE PRICE": "sale_price",
+        "LAT": "latitude",
+        "LON": "longitude"
+    })
 
-    # Convert sale_price to number (in case it's stored as text)
     df["sale_price"] = pd.to_numeric(df["sale_price"], errors="coerce")
-
-    # Remove missing or weird values
     df = df.dropna(subset=["sale_price"])
-    df = df[df["sale_price"] > 10000]  # ignore crazy tiny prices
+    df = df[df["sale_price"] > 10000]
 
     return df
 
