@@ -252,24 +252,24 @@ def main():
         st.write("Not enough data for this chart.")
 
     # ------------ CHART 2: PRICE HISTOGRAM ------------
-    st.subheader("Histogram (Price of Homes)")
+st.subheader("Histogram (Price of Homes)")
 
 if count > 0:
     fig2, ax2 = plt.subplots()
-    
-    clean_prices = filtered_df[filtered_df["PRICE"] <= 5000000]["PRICE"]
-    
-    ax2.hist(clean_prices, bins=20)
+    ax2.hist(filtered_df["PRICE"], bins=20)
 
-    ax2.set_xlabel("Price ($)")
-    ax2.set_ylabel("Number of properties")
-    ax2.set_title("Distribution of Prices (Under $5M)")
+    # 🔥 Match x-axis to the slider!
+    ax2.set_xlim(min_price, max_price)
 
+    # Make numbers readable
     ax2.ticklabel_format(style='plain', axis='x')
     ax2.get_xaxis().set_major_formatter(
         plt.FuncFormatter(lambda x, _: f"{int(x):,}")
     )
 
+    ax2.set_xlabel("Price ($)")
+    ax2.set_ylabel("Number of properties")
+    ax2.set_title("Distribution of Prices (Based on Selected Range)")
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
 
