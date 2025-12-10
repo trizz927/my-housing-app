@@ -256,7 +256,7 @@ def main():
 
     if count > 0:
         fig2, ax2 = plt.subplots()
-        ax2.hist(filtered_df["PRICE"])
+        ax2.hist(filtered_df["PRICE"], bins = 20)
 
         #makes it so there is no negative numbers
         ax.set_xlim(0, None)
@@ -267,6 +267,7 @@ def main():
         ax2.set_xlabel("Price ($)")
         ax2.set_ylabel("Number of properties")
         ax2.set_title("Distribution of Prices")
+        plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
 
         st.pyplot(fig2)
