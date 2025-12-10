@@ -65,7 +65,7 @@ def filter_data(
     status_choice="Any",
     ptype_choice="Any",
 ):
-    """Filter the DataFrame based on user choices."""
+    #Filter the DF based on user choices.
     
     # [FILTER1] filter by one condition (price range)
     # [FILTER2] filter by two or more conditions (AND)
