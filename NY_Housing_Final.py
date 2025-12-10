@@ -252,7 +252,7 @@ def main():
         st.write("Not enough data for this chart.")
 
     # ------------ CHART 2: PRICE HISTOGRAM ------------
-st.subheader("Histogram of Prices (Filtered Data)")
+    st.subheader("Histogram of Prices (Filtered Data)")
 
     if count > 0:
         fig2, ax2 = plt.subplots()
@@ -265,6 +265,8 @@ st.subheader("Histogram of Prices (Filtered Data)")
         st.pyplot(fig2)
     else:
         st.write("Not enough data for the histogram.")
+
+
     # ------------ MAP WITH PYDECK ------------
     
   
