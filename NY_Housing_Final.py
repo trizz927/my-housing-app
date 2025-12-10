@@ -7,8 +7,8 @@ URL:        (add your Streamlit Cloud URL here)
 Description:
 Simple Streamlit app to explore New York housing data.
 You can choose a price range, a specific number of bedrooms and bathrooms,
-and a locality. The app shows the filtered rows, summary statistics,
-two charts, and a map.
+a locality, and a property type. The app shows the filtered rows, summary
+statistics, two charts, and a map.
 
 References:
 - Streamlit docs: https://docs.streamlit.io/
@@ -42,12 +42,15 @@ def get_min_max_price(df):
 
 
 # Python Feature 3: function with parameters and a default argument
-def filter_data(df,
-                min_price,
-                max_price,
-                bed_choice="Any",
-                bath_choice="Any",
-                locality_choice="All"):
+def filter_data(
+    df,
+    min_price,
+    max_price,
+    bed_choice="Any",
+    bath_choice="Any",
+    locality_choice="All",
+    type_choice="Any",
+):
     """Return a filtered copy of the DataFrame using all user choices."""
     # Data Analytics Feature 2: boolean filtering on multiple columns
     filtered = df[
@@ -63,6 +66,9 @@ def filter_data(df,
 
     if locality_choice != "All":
         filtered = filtered[filtered["LOCALITY"] == locality_choice]
+
+    if type_choice != "Any":
+        filtered = filtered[filtered["TYPE"] == type_choice]
 
     return filtered
 
@@ -96,6 +102,12 @@ def main():
     locality_list.sort()
     locality_list = ["All"] + locality_list
 
+    # property type list (house, condo, etc.)
+    type_unique = df["TYPE"].dropna().unique()
+    type_list = [t for t in type_unique]
+    type_list.sort()
+    type_list = ["Any"] + type_list
+
     # use helper to get min and max for slider
     min_price, max_price = get_min_max_price(df)
 
@@ -110,13 +122,11 @@ def main():
     )
 
     # --------- SIDEBAR: BEDROOMS ----------
-    # build sorted list of unique bedroom counts
     beds_unique = sorted(df["BEDS"].dropna().unique().astype(int).tolist())
     bed_options = ["Any"] + beds_unique
     bed_choice = st.sidebar.selectbox("Number of bedrooms", bed_options)
 
     # --------- SIDEBAR: BATHROOMS ----------
-    # bathrooms may be floats (e.g., 1.5), so keep as-is
     baths_unique = sorted(df["BATH"].dropna().unique().tolist())
     bath_options = ["Any"] + baths_unique
     bath_choice = st.sidebar.selectbox("Number of bathrooms", bath_options)
@@ -124,6 +134,9 @@ def main():
     # --------- SIDEBAR: LOCALITY ----------
     # Streamlit Feature 3: selectbox
     locality_choice = st.sidebar.selectbox("Locality", locality_list)
+
+    # --------- SIDEBAR: PROPERTY TYPE ----------
+    type_choice = st.sidebar.selectbox("Property type", type_list)
 
     # -------------- FILTER DATA --------------
     filtered_df = filter_data(
@@ -133,6 +146,7 @@ def main():
         bed_choice=bed_choice,
         bath_choice=bath_choice,
         locality_choice=locality_choice,
+        type_choice=type_choice,
     )
 
     # -------------- SUMMARY STATS --------------
@@ -147,11 +161,10 @@ def main():
     else:
         st.write("No rows match these filters.")
 
-    # short “story” text
     st.write(
         "Use the filters in the sidebar to look for homes in a price range, "
-        "with a specific number of bedrooms and bathrooms, in different areas "
-        "of New York."
+        "with a specific number of bedrooms and bathrooms, in a chosen locality, "
+        "and of a particular property type."
     )
 
     # Show selected columns only
@@ -196,7 +209,7 @@ def main():
 
         st.write(
             "This bar chart shows which localities have the highest average prices "
-            "for homes that match your bedroom, bathroom, and price filters."
+            "for homes that match your bedroom, bathroom, price range, type, and area."
         )
     else:
         st.write("Not enough data for the chart.")
@@ -244,13 +257,15 @@ def main():
         deck = pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            tooltip={"text": "Price: ${PRICE}\nBeds: {BEDS}\nBaths: {BATH}\n{ADDRESS}"},
+            tooltip={
+                "text": "Type: {TYPE}\nPrice: ${PRICE}\nBeds: {BEDS}\nBaths: {BATH}\n{ADDRESS}"
+            },
         )
 
         st.pydeck_chart(deck)
         st.write(
             "Each point on the map shows a property that matches your chosen "
-            "bedroom, bathroom, and price range."
+            "bedrooms, bathrooms, price range, property type, and area."
         )
     else:
         st.write("No locations to show on the map.")
