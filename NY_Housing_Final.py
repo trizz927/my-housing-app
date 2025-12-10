@@ -252,23 +252,20 @@ def main():
         st.write("Not enough data for this chart.")
 
     # ------------ CHART 2: PRICE HISTOGRAM ------------
-st.subheader("Histogram of Prices (Filtered Data)")
+    st.subheader("Histogram of Prices (Filtered Data)")
 
-if count > 0:
-    fig2, ax2 = plt.subplots()
-    ax2.hist(filtered_df["PRICE"], bins=20)
+    if count > 0:
+        fig2, ax2 = plt.subplots()
+        ax2.hist(filtered_df["PRICE"], bins=20)
+        ax2.set_xlabel("Price ($)")
+        ax2.set_ylabel("Number of properties")
+        ax2.set_title("Distribution of Prices")
+        plt.tight_layout()
 
-    # 🔥 make x-axis match the slider range
-    ax2.set_xlim(price_min, price_max)
+        st.pyplot(fig2)
+    else:
+        st.write("Not enough data for the histogram.")
 
-    ax2.set_xlabel("Price ($)")
-    ax2.set_ylabel("Number of properties")
-    ax2.set_title("Distribution of Prices")
-    plt.tight_layout()
-
-    st.pyplot(fig2)
-else:
-    st.write("Not enough data for the histogram.")
 
 
     # ------------ MAP WITH PYDECK ------------
