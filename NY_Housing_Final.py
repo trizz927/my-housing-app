@@ -95,7 +95,7 @@ def main():
     df = load_data()
 
     # ---------- SPLIT TYPE INTO PROPERTY_TYPE AND STATUS (simple) ----------
-    # Example TYPE values: "Condo for sale", "House for rent", "Co-op for sale"
+    #this area is used to split the status part, so you are able to find the type of house and the status while searching
     status_list = []
     ptype_list = []
 
@@ -233,14 +233,14 @@ def main():
             ]
         )
 
-    # ------------ CHART 1: COUNT BY LOCALITY ------------
+    # ------------ CHART 1: COUNT BY "LOCALITY" ------------
     st.subheader("Number of Homes by Locality (Top 10)")
 
     if count > 0:
-        loc_counts = filtered_df["LOCALITY"].value_counts().head(10)
+        local_counts = filtered_df["LOCALITY"].value_counts().head(10)
 
         fig, ax = plt.subplots()
-        ax.bar(loc_counts.index, loc_counts.values)
+        ax.bar(local_counts.index, local_counts.values)
         ax.set_ylabel("Number of homes")
         ax.set_xlabel("Locality")
         ax.set_title("Top 10 Localities by Number of Listings")
@@ -252,11 +252,18 @@ def main():
         st.write("Not enough data for this chart.")
 
     # ------------ CHART 2: PRICE HISTOGRAM ------------
-    st.subheader("Histogram of Prices (Filtered Data)")
+    st.subheader("Histogram (Price of Homes)")
 
     if count > 0:
         fig2, ax2 = plt.subplots()
-        ax2.hist(filtered_df["PRICE"], bins=20)
+        ax2.hist(filtered_df["PRICE"])
+
+        #makes it so there is no negative numbers
+        ax.set_xlim(0, None)
+        # I used ai for this because I did not want, the graphs to use scientific notation I wanted to have it simpler
+        ax2.ticklabel_format(style='plain', axis='x') 
+        ax2.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x):,}"))
+        
         ax2.set_xlabel("Price ($)")
         ax2.set_ylabel("Number of properties")
         ax2.set_title("Distribution of Prices")
@@ -267,6 +274,8 @@ def main():
         st.write("Not enough data for the histogram.")
 
     # ------------ MAP WITH PYDECK ------------
+    
+  
     st.subheader("Map of Properties")
 
     if count > 0:
@@ -274,7 +283,7 @@ def main():
             "ScatterplotLayer",
             data=filtered_df,
             get_position="[LONGITUDE, LATITUDE]",
-            get_radius=50,
+            get_radius=100,
             get_color=[200, 0, 0],
         )
 
