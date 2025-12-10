@@ -1,337 +1,236 @@
 """
 Name:       Your Name
 CS230:      Section XXX
-Data:       New York Housing Market
-URL:        (add Streamlit Cloud URL here if you deploy it)
+Data:       NY-House-Dataset.csv
+URL:        (add your Streamlit Cloud URL here)
 
 Description:
-This program is an interactive Streamlit web app that explores New York
-housing data. Users can filter by price, beds, baths, location, and
-property type, and see the results in tables, charts, and a map.
-The app includes summary statistics, charts of average prices and
-price vs. square footage, and a PyDeck map of properties.
+Simple Streamlit app to explore New York housing data.
+You can choose a maximum price, minimum beds, and locality.
+The app shows the filtered rows, summary statistics, two charts, and a map.
 
 References:
 - Streamlit docs: https://docs.streamlit.io/
-- PyDeck docs: https://deckgl.readthedocs.io/
 - Matplotlib docs: https://matplotlib.org/
+- PyDeck docs: https://deckgl.readthedocs.io/
 """
 
-import pandas as pd
-import numpy as np
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
 import pydeck as pdk
 
-DATA_PATH = "NY-House-Dataset.csv"
 
+# Python Feature 1: function with a parameter and a return value
+def load_data():
+    """Read the CSV file and do very small cleaning."""
+    df = pd.read_csv("NY-House-Dataset.csv")
 
-# ----------------- DATA LOADING & UTILITIES ----------------- #
-
-# [FUNC2P] function with 2+ parameters, one with default
-@st.cache_data
-def load_data(path=DATA_PATH, nrows=None):
-    """Load housing data from CSV and do basic cleaning."""
-    df = pd.read_csv(path, nrows=nrows)
-    # basic cleaning
+    # Data Analytics Feature 1: basic cleaning with dropna and filter
     df = df.dropna(subset=["PRICE", "LATITUDE", "LONGITUDE"])
     df = df[df["PRICE"] > 0]
+
     return df
 
 
-# [FUNCRETURN2] function that returns two values
-def get_price_range(df):
-    """Return (min_price, max_price) from the DataFrame."""
+# Python Feature 2: function returning two values
+def get_min_max_price(df):
     min_price = int(df["PRICE"].min())
     max_price = int(df["PRICE"].max())
     return min_price, max_price
 
 
-def add_price_per_sqft(df):
-    """Add a price per square foot column if square footage is available."""
-    # [LAMBDA] using lambda function
-    df = df.copy()
-    df["PRICE_PER_SQFT"] = df.apply(
-        lambda row: row["PRICE"] / row["PROPERTYSQFT"]
-        if row.get("PROPERTYSQFT", 0) and row["PROPERTYSQFT"] > 0
-        else np.nan,
-        axis=1,
-    )
-    return df
-
-
-def filter_properties(
-    df,
-    max_price,
-    min_beds,
-    min_baths,
-    selected_locality,
-    selected_types,
-):
-    """
-    Filter properties based on price, beds, baths, locality, and type.
-    """
-    # [FILTER1] simple filter by max price
+# Python Feature 3: function with parameters and a default argument
+def filter_data(df, max_price, min_beds=0, locality_choice="All"):
+    """Return a filtered copy of the DataFrame."""
+    # Data Analytics Feature 2: boolean filtering on multiple columns
     filtered = df[df["PRICE"] <= max_price]
+    filtered = filtered[filtered["BEDS"] >= min_beds]
 
-    # [FILTER2] filter with multiple conditions
-    filtered = filtered[
-        (filtered["BEDS"] >= min_beds)
-        & (filtered["BATH"] >= min_baths)
-    ]
+    if locality_choice != "All":
+        filtered = filtered[filtered["LOCALITY"] == locality_choice]
 
-    if selected_locality != "All":
-        filtered = filtered[filtered["LOCALITY"] == selected_locality]
-
-    if selected_types:
-        filtered = filtered[filtered["TYPE"].isin(selected_types)]
-
-    # [SORT] sort by price descending
-    filtered = filtered.sort_values("PRICE", ascending=False)
     return filtered
 
 
-def summarize_stats(df):
-    """Return a small dictionary of summary statistics."""
-    stats = {
-        "Number of properties": len(df),
-        "Average price": df["PRICE"].mean(),
-        "Average beds": df["BEDS"].mean(),
-        "Average baths": df["BATH"].mean(),
-    }
-    # [DICTMETHOD] using dictionary methods
-    # Example methods: .items() and .get()
-    _ = list(stats.items())
-    _ = stats.get("Average price", 0)
-    return stats
+# Python Feature 4: function computing summary numbers
+def get_summary_stats(filtered_df):
+    if len(filtered_df) == 0:
+        return 0, 0.0, 0.0
 
+    count = len(filtered_df)
+    avg_price = float(filtered_df["PRICE"].mean())
+    avg_beds = float(filtered_df["BEDS"].mean())
+    return count, avg_price, avg_beds
 
-# ----------------- MAIN STREAMLIT APP ----------------- #
 
 def main():
-    st.set_page_config(
-        page_title="NY Housing Explorer",
-        layout="wide",
-        initial_sidebar_state="expanded",
-    )
+    st.title("New York Housing Explorer")
 
-    # [ST3] simple page design feature: custom title styling
-    st.markdown(
-        "<h1 style='text-align:center; color:#1f4e79;'>New York Housing Data Explorer</h1>",
-        unsafe_allow_html=True,
-    )
-    st.write("Use the controls in the sidebar to explore the New York housing market.")
+    # Streamlit Feature 1: sidebar layout
+    st.sidebar.header("Filters")
 
-    # [FUNCCALL2] load_data is called in more than one place if needed
+    # -------------- LOAD DATA --------------
     df = load_data()
-    df = add_price_per_sqft(df)
 
-    # ------------- SIDEBAR CONTROLS ------------- #
-    st.sidebar.header("Filter Options")
+    # Data Analytics Feature 3: create a new derived column
+    df["PRICE_PER_SQFT"] = df["PRICE"] / df["PROPERTYSQFT"].replace(0, pd.NA)
 
-    # [LISTCOMP] list comprehension for property types
-    property_types = [t for t in sorted(df["TYPE"].dropna().unique())]
+    # Python Feature 5: list comprehension to build locality list
+    locality_unique = df["LOCALITY"].dropna().unique()
+    locality_list = [loc for loc in locality_unique]
+    locality_list.sort()
+    locality_list = ["All"] + locality_list
 
-    # [ST1] dropdown / multiselect
-    selected_locality = st.sidebar.selectbox(
-        "Select Locality (city/borough)",
-        options=["All"] + sorted(df["LOCALITY"].dropna().unique()),
-    )
+    # use helper to get min and max for slider
+    min_price, max_price = get_min_max_price(df)
 
-    selected_types = st.sidebar.multiselect(
-        "Property type(s)",
-        options=property_types,
-        default=property_types,
-    )
-
-    min_price, max_price = get_price_range(df)
-
-    # [ST2] slider
-    price_limit = st.sidebar.slider(
+    # Streamlit Feature 2: sliders
+    max_price_choice = st.sidebar.slider(
         "Maximum price ($)",
         min_value=min_price,
         max_value=max_price,
-        value=min(min_price * 10, max_price),
-        step=10000,
+        value=max_price,
+        step=50000,
     )
 
-    min_beds = st.sidebar.slider("Minimum beds", 0, int(df["BEDS"].max()), 0, 1)
-    min_baths = st.sidebar.slider(
-        "Minimum baths", 0.0, float(df["BATH"].max()), 0.0, 0.5
+    min_beds_choice = st.sidebar.slider(
+        "Minimum number of bedrooms",
+        min_value=0,
+        max_value=int(df["BEDS"].max()),
+        value=0,
+        step=1,
     )
 
-    st.sidebar.markdown("---")
-    st.sidebar.write("Adjust filters to update charts, tables, and the map below.")
+    # Streamlit Feature 3: selectbox
+    locality_choice = st.sidebar.selectbox("Locality", locality_list)
 
-    # Apply filters
-    filtered_df = filter_properties(
+    # -------------- FILTER DATA --------------
+    filtered_df = filter_data(
         df,
-        max_price=price_limit,
-        min_beds=min_beds,
-        min_baths=min_baths,
-        selected_locality=selected_locality,
-        selected_types=selected_types,
+        max_price=max_price_choice,
+        min_beds=min_beds_choice,
+        locality_choice=locality_choice,
     )
 
-    # ----------------- TOP METRICS ----------------- #
-    stats = summarize_stats(filtered_df)
-
-    cols = st.columns(4)
-    # [ITERLOOP] iterating through dictionary items
-    for col, (label, value) in zip(cols, stats.items()):
-        with col:
-            if "price" in label.lower():
-                col.metric(label, f"${value:,.0f}")
-            else:
-                col.metric(label, f"{value:,.2f}")
-
-    # ----------------- DATA TABLE ----------------- #
+    # -------------- SUMMARY STATS --------------
     st.subheader("Filtered Properties")
 
-    show_cols = [
-        "TYPE",
-        "PRICE",
-        "BEDS",
-        "BATH",
-        "PROPERTYSQFT",
-        "LOCALITY",
-        "SUBLOCALITY",
-        "ADDRESS",
-        "PRICE_PER_SQFT",
-    ]
-    existing_show_cols = [c for c in show_cols if c in filtered_df.columns]
-    st.dataframe(filtered_df[existing_show_cols], use_container_width=True)
+    count, avg_price, avg_beds = get_summary_stats(filtered_df)
+    st.write("Number of properties:", count)
 
-    # ----------------- CHART 1: AVG PRICE BY LOCALITY ----------------- #
-    st.markdown("### Average Price by Locality (Top 10)")
+    if count > 0:
+        st.write("Average price of filtered homes: $", round(avg_price, 2))
+        st.write("Average number of bedrooms:", round(avg_beds, 2))
+    else:
+        st.write("No rows match these filters.")
 
-    if not filtered_df.empty:
-        avg_price_by_loc = (
-            filtered_df.groupby("LOCALITY")["PRICE"].mean().sort_values(ascending=False)
+    # short “story” text
+    st.write(
+        "This table lets us explore how price and size change across different areas "
+        "of New York when we change the filters in the sidebar."
+    )
+
+    # Show selected columns only
+    if count > 0:
+        st.dataframe(
+            filtered_df[
+                [
+                    "TYPE",
+                    "PRICE",
+                    "BEDS",
+                    "BATH",
+                    "PROPERTYSQFT",
+                    "LOCALITY",
+                    "ADDRESS",
+                    "PRICE_PER_SQFT",
+                ]
+            ]
         )
-        avg_price_by_loc = avg_price_by_loc.head(10)
 
-        fig1, ax1 = plt.subplots()
-        # [CHART1] bar chart with custom labels, rotation, etc.
-        ax1.bar(avg_price_by_loc.index, avg_price_by_loc.values)
-        ax1.set_ylabel("Average Price ($)")
-        ax1.set_xlabel("Locality")
-        ax1.set_title("Top 10 Localities by Average Listing Price")
+    # -------------- VISUALIZATION 1: BAR CHART --------------
+    st.subheader("Average Price by Locality (Top 10)")
+
+    if count > 0:
+        # Data Analytics Feature 4: groupby + mean + sort
+        avg_by_loc = (
+            filtered_df.groupby("LOCALITY")["PRICE"]
+            .mean()
+            .sort_values(ascending=False)
+            .head(10)
+        )
+
+        fig, ax = plt.subplots()
+        ax.bar(avg_by_loc.index, avg_by_loc.values)
+        ax.set_ylabel("Average Price ($)")
+        ax.set_xlabel("Locality")
+        ax.set_title("Top Localities by Average Price")
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
 
-        st.pyplot(fig1)
-    else:
-        st.info("No properties match the current filters for this chart.")
+        # Visualization Feature 1: Matplotlib bar chart in Streamlit
+        st.pyplot(fig)
 
-    # ----------------- CHART 2: PRICE VS SQFT SCATTER ----------------- #
-    st.markdown("### Price vs. Property Square Footage")
-
-    scatter_df = filtered_df.dropna(subset=["PROPERTYSQFT", "PRICE"])
-    if not scatter_df.empty:
-        fig2, ax2 = plt.subplots()
-        # [CHART2] scatter plot
-        sc = ax2.scatter(
-            scatter_df["PROPERTYSQFT"],
-            scatter_df["PRICE"],
-            alpha=0.6,
+        st.write(
+            "This bar chart shows which localities have the highest average prices "
+            "under the current filters."
         )
-        ax2.set_xlabel("Square Footage")
-        ax2.set_ylabel("Price ($)")
-        ax2.set_title("Price vs. Square Footage")
+    else:
+        st.write("Not enough data for the chart.")
+
+    # -------------- VISUALIZATION 2: HISTOGRAM --------------
+    st.subheader("Histogram of Prices (Filtered Data)")
+
+    if count > 0:
+        fig2, ax2 = plt.subplots()
+        ax2.hist(filtered_df["PRICE"], bins=20)
+        ax2.set_xlabel("Price ($)")
+        ax2.set_ylabel("Count of properties")
+        ax2.set_title("Distribution of Prices")
         plt.tight_layout()
 
+        # Visualization Feature 2: Matplotlib histogram
         st.pyplot(fig2)
-    else:
-        st.info("Not enough data with both price and square footage for this chart.")
 
-    # ----------------- PIVOT TABLE ----------------- #
-    st.markdown("### Average Price by Locality and Property Type (Pivot Table)")
-
-    if not filtered_df.empty:
-        # [PIVOTTABLE] pivot analysis
-        pivot = filtered_df.pivot_table(
-            values="PRICE",
-            index="LOCALITY",
-            columns="TYPE",
-            aggfunc="mean",
+        st.write(
+            "The histogram shows how many properties fall into different price ranges "
+            "for the chosen filters."
         )
-        st.dataframe(pivot.style.format("${:,.0f}"), use_container_width=True)
     else:
-        st.info("No data available for pivot table with current filters.")
+        st.write("Not enough data for the histogram.")
 
-    # [COLUMNS] was used when adding PRICE_PER_SQFT in add_price_per_sqft()
+    # -------------- VISUALIZATION 3: MAP --------------------
+    st.subheader("Map of Properties")
 
-    # [MAXMIN] find most expensive and cheapest properties
-    st.markdown("### Price Extremes in Filtered Results")
-    if not filtered_df.empty:
-        max_row = filtered_df.loc[filtered_df["PRICE"].idxmax()]
-        min_row = filtered_df.loc[filtered_df["PRICE"].idxmin()]
-
-        col_max, col_min = st.columns(2)
-        with col_max:
-            st.write("#### Most Expensive Listing")
-            st.write(f"**Price:** ${max_row['PRICE']:,.0f}")
-            st.write(f"**Type:** {max_row['TYPE']}")
-            st.write(f"**Beds/Baths:** {max_row['BEDS']} / {max_row['BATH']}")
-            st.write(f"**Address:** {max_row['ADDRESS']}")
-        with col_min:
-            st.write("#### Least Expensive Listing")
-            st.write(f"**Price:** ${min_row['PRICE']:,.0f}")
-            st.write(f"**Type:** {min_row['TYPE']}")
-            st.write(f"**Beds/Baths:** {min_row['BEDS']} / {min_row['BATH']}")
-            st.write(f"**Address:** {min_row['ADDRESS']}")
-    else:
-        st.info("No properties to show extremes for.")
-
-    # ----------------- MAP ----------------- #
-    st.markdown("### Map of Properties")
-
-    if not filtered_df.empty:
-        # [MAP] PyDeck detailed map with tooltips
-        map_df = filtered_df[
-            ["LATITUDE", "LONGITUDE", "PRICE", "TYPE", "BEDS", "BATH", "ADDRESS"]
-        ].dropna(subset=["LATITUDE", "LONGITUDE"])
-
-        midpoint = (
-            np.average(map_df["LATITUDE"]),
-            np.average(map_df["LONGITUDE"]),
-        )
-
+    if count > 0:
+        # Visualization Feature 3: PyDeck map
         layer = pdk.Layer(
             "ScatterplotLayer",
-            data=map_df,
+            data=filtered_df,
             get_position="[LONGITUDE, LATITUDE]",
-            get_radius=30,
-            get_fill_color="[200, 30, 0, 160]",
-            pickable=True,
+            get_radius=50,
+            get_color=[200, 0, 0],
         )
 
-        tooltip = {
-            "html": (
-                "<b>Price:</b> ${PRICE}<br/>"
-                "<b>Type:</b> {TYPE}<br/>"
-                "<b>Beds/Baths:</b> {BEDS} / {BATH}<br/>"
-                "<b>Address:</b> {ADDRESS}"
-            ),
-            "style": {"backgroundColor": "steelblue", "color": "white"},
-        }
+        view_state = pdk.ViewState(
+            longitude=float(filtered_df["LONGITUDE"].mean()),
+            latitude=float(filtered_df["LATITUDE"].mean()),
+            zoom=9,
+        )
 
         deck = pdk.Deck(
-            map_style="mapbox://styles/mapbox/light-v9",
-            initial_view_state=pdk.ViewState(
-                latitude=midpoint[0],
-                longitude=midpoint[1],
-                zoom=10,
-                pitch=40,
-            ),
             layers=[layer],
-            tooltip=tooltip,
+            initial_view_state=view_state,
+            tooltip={"text": "Price: ${PRICE}\nBeds: {BEDS}\n{ADDRESS}"},
         )
 
         st.pydeck_chart(deck)
+        st.write(
+            "Each point on the map shows a property that matches the filters. "
+            "This helps us see where listings are concentrated."
+        )
     else:
-        st.info("No locations to show on the map with the current filters.")
+        st.write("No locations to show on the map.")
 
 
 if __name__ == "__main__":
