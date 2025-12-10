@@ -6,8 +6,9 @@ URL:        (add your Streamlit Cloud URL here)
 
 Description:
 Simple Streamlit app to explore New York housing data.
-You can choose a maximum price, minimum beds, and locality.
-The app shows the filtered rows, summary statistics, two charts, and a map.
+You can choose a price range, a specific number of bedrooms and bathrooms,
+and a locality. The app shows the filtered rows, summary statistics,
+two charts, and a map.
 
 References:
 - Streamlit docs: https://docs.streamlit.io/
@@ -41,11 +42,24 @@ def get_min_max_price(df):
 
 
 # Python Feature 3: function with parameters and a default argument
-def filter_data(df, max_price, min_beds=0, locality_choice="All"):
-    """Return a filtered copy of the DataFrame."""
+def filter_data(df,
+                min_price,
+                max_price,
+                bed_choice="Any",
+                bath_choice="Any",
+                locality_choice="All"):
+    """Return a filtered copy of the DataFrame using all user choices."""
     # Data Analytics Feature 2: boolean filtering on multiple columns
-    filtered = df[df["PRICE"] <= max_price]
-    filtered = filtered[filtered["BEDS"] >= min_beds]
+    filtered = df[
+        (df["PRICE"] >= min_price) &
+        (df["PRICE"] <= max_price)
+    ]
+
+    if bed_choice != "Any":
+        filtered = filtered[filtered["BEDS"] == bed_choice]
+
+    if bath_choice != "Any":
+        filtered = filtered[filtered["BATH"] == bath_choice]
 
     if locality_choice != "All":
         filtered = filtered[filtered["LOCALITY"] == locality_choice]
@@ -85,31 +99,39 @@ def main():
     # use helper to get min and max for slider
     min_price, max_price = get_min_max_price(df)
 
-    # Streamlit Feature 2: sliders
-    max_price_choice = st.sidebar.slider(
-        "Maximum price ($)",
+    # --------- SIDEBAR: PRICE RANGE (min + max) ----------
+    # Streamlit Feature 2: range slider (you can slide OR type values)
+    price_min, price_max = st.sidebar.slider(
+        "Price range ($)",
         min_value=min_price,
         max_value=max_price,
-        value=max_price,
+        value=(min_price, max_price),
         step=50000,
     )
 
-    min_beds_choice = st.sidebar.slider(
-        "Minimum number of bedrooms",
-        min_value=0,
-        max_value=int(df["BEDS"].max()),
-        value=0,
-        step=1,
-    )
+    # --------- SIDEBAR: BEDROOMS ----------
+    # build sorted list of unique bedroom counts
+    beds_unique = sorted(df["BEDS"].dropna().unique().astype(int).tolist())
+    bed_options = ["Any"] + beds_unique
+    bed_choice = st.sidebar.selectbox("Number of bedrooms", bed_options)
 
+    # --------- SIDEBAR: BATHROOMS ----------
+    # bathrooms may be floats (e.g., 1.5), so keep as-is
+    baths_unique = sorted(df["BATH"].dropna().unique().tolist())
+    bath_options = ["Any"] + baths_unique
+    bath_choice = st.sidebar.selectbox("Number of bathrooms", bath_options)
+
+    # --------- SIDEBAR: LOCALITY ----------
     # Streamlit Feature 3: selectbox
     locality_choice = st.sidebar.selectbox("Locality", locality_list)
 
     # -------------- FILTER DATA --------------
     filtered_df = filter_data(
         df,
-        max_price=max_price_choice,
-        min_beds=min_beds_choice,
+        min_price=price_min,
+        max_price=price_max,
+        bed_choice=bed_choice,
+        bath_choice=bath_choice,
         locality_choice=locality_choice,
     )
 
@@ -127,8 +149,9 @@ def main():
 
     # short “story” text
     st.write(
-        "This table lets us explore how price and size change across different areas "
-        "of New York when we change the filters in the sidebar."
+        "Use the filters in the sidebar to look for homes in a price range, "
+        "with a specific number of bedrooms and bathrooms, in different areas "
+        "of New York."
     )
 
     # Show selected columns only
@@ -173,7 +196,7 @@ def main():
 
         st.write(
             "This bar chart shows which localities have the highest average prices "
-            "under the current filters."
+            "for homes that match your bedroom, bathroom, and price filters."
         )
     else:
         st.write("Not enough data for the chart.")
@@ -194,7 +217,7 @@ def main():
 
         st.write(
             "The histogram shows how many properties fall into different price ranges "
-            "for the chosen filters."
+            "for the current filters."
         )
     else:
         st.write("Not enough data for the histogram.")
@@ -221,13 +244,13 @@ def main():
         deck = pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            tooltip={"text": "Price: ${PRICE}\nBeds: {BEDS}\n{ADDRESS}"},
+            tooltip={"text": "Price: ${PRICE}\nBeds: {BEDS}\nBaths: {BATH}\n{ADDRESS}"},
         )
 
         st.pydeck_chart(deck)
         st.write(
-            "Each point on the map shows a property that matches the filters. "
-            "This helps us see where listings are concentrated."
+            "Each point on the map shows a property that matches your chosen "
+            "bedroom, bathroom, and price range."
         )
     else:
         st.write("No locations to show on the map.")
