@@ -15,7 +15,8 @@ References:
 - Matplotlib documentation: https://matplotlib.org/
 - PyDeck documentation: https://deckgl.readthedocs.io/
 - ChatGpt with a few lines that I did not know how to do for example making the numbers not scientific notation,
-also to give me a base line for streamlit examples to build on (items used are my own though)
+also to give me a base line for streamlit examples to build on (items used are my own though),
+also when the app it wasnt working it helped me get it working by telling me to use the requirements.txt
 -Youtube to help teach me streamlit while I was stuck because I was not there for the class.
 """
 
