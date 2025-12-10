@@ -147,37 +147,38 @@ def main():
 
     # price range (slider uses min and max)
     min_price = int(df["PRICE"].min())
-max_price = int(df["PRICE"].max())
+    max_price = int(df["PRICE"].max())
 
 # ---- Slider ----
-price_min, price_max = st.sidebar.slider(
-    "Price range ($)",
-    min_value=min_price,
-    max_value=max_price,
-    value=(min_price, max_price),
-    step=50000,
-)
+    price_min, price_max = st.sidebar.slider(
+        "Price range ($)",
+        min_value=min_price,
+        max_value=max_price,
+        value=(min_price, max_price),
+        step=50000,
+    )
 
 # ---- Manual inputs ----
-st.sidebar.write("Or enter exact values:")
+    st.sidebar.write("Or enter exact values:")
 
-exact_min = st.sidebar.number_input(
-    "Exact minimum price",
-    min_value=min_price,
-    max_value=max_price,
-    value=price_min
-)
+    exact_min = st.sidebar.number_input(
+        "Exact minimum price",
+        min_value=min_price,
+        max_value=max_price,
+        value=price_min
+    )
 
-exact_max = st.sidebar.number_input(
-    "Exact maximum price",
-    min_value=min_price,
-    max_value=max_price,
-    value=price_max
-)
+    exact_max = st.sidebar.number_input(
+        "Exact maximum price",
+        min_value=min_price,
+        max_value=max_price,
+        value=price_max
+    )
 
 # ---- Use the manual input (if changed) ----
-price_min = exact_min
-price_max = exact_max
+    price_min = exact_min
+    price_max = exact_max
+
 
     
 
