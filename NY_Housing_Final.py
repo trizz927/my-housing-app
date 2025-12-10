@@ -254,25 +254,28 @@ def main():
     # ------------ CHART 2: PRICE HISTOGRAM ------------
     st.subheader("Histogram (Price of Homes)")
 
-    if count > 0:
-        fig2, ax2 = plt.subplots()
-        ax2.hist(filtered_df["PRICE"], bins = 20)
+if count > 0:
+    fig2, ax2 = plt.subplots()
+    
+    clean_prices = filtered_df[filtered_df["PRICE"] <= 5000000]["PRICE"]
+    
+    ax2.hist(clean_prices, bins=20)
 
-        #makes it so there is no negative numbers
-        ax.set_xlim(0, None)
-        # I used ai for this because I did not want, the graphs to use scientific notation I wanted to have it simpler
-        ax2.ticklabel_format(style='plain', axis='x') 
-        ax2.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x):,}"))
-        
-        ax2.set_xlabel("Price ($)")
-        ax2.set_ylabel("Number of properties")
-        ax2.set_title("Distribution of Prices")
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
+    ax2.set_xlabel("Price ($)")
+    ax2.set_ylabel("Number of properties")
+    ax2.set_title("Distribution of Prices (Under $5M)")
 
-        st.pyplot(fig2)
-    else:
-        st.write("Not enough data for the histogram.")
+    ax2.ticklabel_format(style='plain', axis='x')
+    ax2.get_xaxis().set_major_formatter(
+        plt.FuncFormatter(lambda x, _: f"{int(x):,}")
+    )
+
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+
+    st.pyplot(fig2)
+else:
+    st.write("Not enough data for the histogram.")
 
     # ------------ MAP WITH PYDECK ------------
     
