@@ -262,7 +262,7 @@ def main():
         fig2, ax2 = plt.subplots()
         ax2.hist(filtered_df["PRICE"], bins=20)
 
-        # 🔥 turn off scientific notation + add commas
+        # I got help with this to get it out of scientific notation and put them into to normal numbers to make it easier to read.
         ax2.ticklabel_format(style='plain', axis='x')
         ax2.get_xaxis().set_major_formatter(
             plt.FuncFormatter(lambda x, _: f"{int(x):,}")
@@ -271,6 +271,7 @@ def main():
         ax2.set_xlabel("Price ($)")
         ax2.set_ylabel("Number of properties")
         ax2.set_title("Distribution of Prices")
+        plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
         st.pyplot(fig2)
     else:
