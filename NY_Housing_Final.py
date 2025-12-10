@@ -47,20 +47,26 @@ def filter_data(
     ptype_choice="Any",
 ):
     """Filter the DataFrame based on user choices."""
+    # filter by price range
     filtered = df[(df["PRICE"] >= min_price) & (df["PRICE"] <= max_price)]
 
+    # filter by exact number of bedrooms
     if bed_choice != "Any":
         filtered = filtered[filtered["BEDS"] == bed_choice]
 
+    # filter by exact number of bathrooms
     if bath_choice != "Any":
         filtered = filtered[filtered["BATH"] == bath_choice]
 
+    # filter by locality
     if locality_choice != "All":
         filtered = filtered[filtered["LOCALITY"] == locality_choice]
 
+    # filter by listing status (For Sale, For Rent, Sold, etc.)
     if status_choice != "Any":
         filtered = filtered[filtered["STATUS"] == status_choice]
 
+    # filter by property type (Condo, Apartment, House, etc.)
     if ptype_choice != "Any":
         filtered = filtered[filtered["PROPERTY_TYPE"] == ptype_choice]
 
@@ -96,19 +102,18 @@ def main():
     status_list = []
     ptype_list = []
 
+    # TYPE examples: "FOR SALE - Condo", "FOR RENT - Apartment"
     for value in df["TYPE"]:
-        # handle values like "FOR SALE - Condo"
         if isinstance(value, str) and " - " in value:
             parts = value.split(" - ")
-            status_value = parts[0]
-            ptype_value = parts[1]
+            status_value = parts[0]       # e.g., FOR SALE
+            property_value = parts[1]     # e.g., Condo
         else:
-            # if it's missing or in a different format
-            status_value = value
-            ptype_value = "Unknown"
+            status_value = value          # keep original or NaN
+            property_value = "Unknown"
 
         status_list.append(status_value)
-        ptype_list.append(ptype_value)
+        ptype_list.append(property_value)
 
     df["STATUS"] = status_list
     df["PROPERTY_TYPE"] = ptype_list
@@ -126,34 +131,44 @@ def main():
         step=50000,
     )
 
-    # bedrooms
+    # bedrooms (convert to int list)
     beds_unique = df["BEDS"].dropna().unique()
     beds_unique = sorted(beds_unique.astype(int).tolist())
-    bed_options = ["Any"] + beds_unique
+    bed_options = ["Any"]
+    for b in beds_unique:
+        bed_options.append(b)
     bed_choice = st.sidebar.selectbox("Number of bedrooms", bed_options)
 
-    # bathrooms
+    # bathrooms (can be floats like 1.5)
     baths_unique = df["BATH"].dropna().unique()
     baths_unique = sorted(baths_unique.tolist())
-    bath_options = ["Any"] + baths_unique
+    bath_options = ["Any"]
+    for b in baths_unique:
+        bath_options.append(b)
     bath_choice = st.sidebar.selectbox("Number of bathrooms", bath_options)
 
     # locality
     locality_unique = df["LOCALITY"].dropna().unique().tolist()
     locality_unique.sort()
-    locality_options = ["All"] + locality_unique
+    locality_options = ["All"]
+    for loc in locality_unique:
+        locality_options.append(loc)
     locality_choice = st.sidebar.selectbox("Locality", locality_options)
 
-    # listing status (For Sale, For Rent, Sold, etc.)
+    # listing status
     status_unique = df["STATUS"].dropna().unique().tolist()
     status_unique.sort()
-    status_options = ["Any"] + status_unique
+    status_options = ["Any"]
+    for s in status_unique:
+        status_options.append(s)
     status_choice = st.sidebar.selectbox("Listing status", status_options)
 
-    # property type (Condo, Apartment, House, etc.)
+    # property type
     ptype_unique = df["PROPERTY_TYPE"].dropna().unique().tolist()
     ptype_unique.sort()
-    ptype_options = ["Any"] + ptype_unique
+    ptype_options = ["Any"]
+    for p in ptype_unique:
+        ptype_options.append(p)
     ptype_choice = st.sidebar.selectbox("Property type", ptype_options)
 
     # ------------ FILTER DATA ------------
