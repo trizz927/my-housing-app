@@ -86,7 +86,7 @@ def filter_data(
 # --------- MAIN APP ---------
 
 def main():
-    st.title("New York Housing Explorer")
+    st.title("Ney York Living - Online Assistant")
 
     # sidebar for controls
     st.sidebar.header("Filters")
@@ -156,6 +156,24 @@ def main():
         value=(min_price, max_price),
         step=50000,
     )
+
+    st.sidebar.write("Or enter exact values:")
+
+    exact_min = st.sidebar.number_input(
+        "Exact minimum price",
+        min_value=min_price,
+        max_value=max_price,
+        value=price_min
+    )
+
+    exact_max = st.sidebar.number_input(
+        "Exact maximum price",
+        min_value=min_price,
+        max_value=max_price,
+        value=price_max
+    )
+
+    
 
     # bedrooms
     beds_unique = df["BEDS"].dropna().unique()
