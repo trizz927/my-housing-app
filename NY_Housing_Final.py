@@ -149,15 +149,6 @@ def main():
     min_price = int(df["PRICE"].min())
     max_price = int(df["PRICE"].max())
 
-# ---- Slider ----
-    price_min, price_max = st.sidebar.slider(
-        "Price range ($)",
-        min_value=min_price,
-        max_value=max_price,
-        value=(min_price, max_price),
-        step=50000,
-    )
-
 # ---- Manual inputs ----
     st.sidebar.write("Or enter exact values:")
 
@@ -183,8 +174,17 @@ def main():
     
 
     # bedrooms
-    beds_unique = df["BEDS"].dropna().unique()
-    beds_unique = sorted(beds_unique.astype(int).tolist())
+    bed_min = int(df["BEDS"].min())
+    bed_max = int(df["BEDS"].max())
+
+    bed_min_sel, bed_max_sel = st.sidebar.slider(
+        "Number of Bedrooms",
+        min_value=bed_min,
+        max_value=bed_max,
+        value=(bed_min, bed_max)
+    )
+
+
     # list comprehension for options
     bed_options = ["Any"] + [b for b in beds_unique]
     bed_choice = st.sidebar.selectbox("Number of bedrooms", bed_options)
