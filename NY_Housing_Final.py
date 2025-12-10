@@ -9,12 +9,18 @@ This Streamlit app explores New York housing data. The user can filter homes
 by price range, bedrooms, bathrooms, locality, listing status, and property type.
 The app shows a filtered table of homes, summary statistics, a bar chart by locality,
 a histogram of prices, and a map of the filtered properties.
+
+References:
+- Streamlit documentation: https://docs.streamlit.io/
+- Matplotlib documentation: https://matplotlib.org/
+- PyDeck documentation: https://deckgl.readthedocs.io/
 """
 
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import pydeck as pdk
+from matplotlib.ticker import FuncFormatter
 
 
 # --------- FUNCTIONS ---------
@@ -30,6 +36,7 @@ def load_data():
     return df
 
 
+# [FUNCRETURN2] function that returns 2+ values
 def get_summary_stats(df_input):
     """Return count, average price, average beds."""
     if len(df_input) == 0:
@@ -41,6 +48,7 @@ def get_summary_stats(df_input):
     return count, avg_price, avg_beds
 
 
+# [FUNC2P] function with 2+ parameters and default values
 def filter_data(
     df,
     min_price,
@@ -54,7 +62,8 @@ def filter_data(
 ):
     """Filter the DataFrame based on user choices."""
     
-    # price filtering
+    # [FILTER1] filter by one condition (price range)
+    # [FILTER2] filter by two or more conditions (AND)
     filtered = df[(df["PRICE"] >= min_price) & (df["PRICE"] <= max_price)]
 
     # bedroom RANGE filtering
@@ -87,6 +96,7 @@ def filter_data(
 def main():
 
     st.title("New York Living - Online Assistant")
+    # [ST3] use sidebar for layout
     st.sidebar.header("Filters")
 
     df = load_data()
@@ -95,6 +105,7 @@ def main():
     status_list = []
     ptype_list = []
 
+    # [ITERLOOP] loop through items in a DataFrame column
     for value in df["TYPE"]:
         if isinstance(value, str):
             text = value.strip()
@@ -132,12 +143,22 @@ def main():
         ptype_list.append(property_value)
         status_list.append(status_value)
 
+    # [COLUMNS] adding new columns to DataFrame
     df["PROPERTY_TYPE"] = ptype_list
     df["STATUS"] = status_list
+
+    # ------------ OVERALL DATASET SUMMARY (2nd function call) ------------
+    # [FUNCCALL2] get_summary_stats is called in 2+ places
+    total_count, total_avg_price, total_avg_beds = get_summary_stats(df)
+    st.subheader("Overall Dataset Summary")
+    st.write("Total number of properties:", total_count)
+    st.write("Overall average price: $", round(total_avg_price, 2))
+    st.write("Overall average beds:", round(total_avg_beds, 2))
 
     # ------------ SIDEBAR FILTERS ------------
 
     # manual price input
+    # [MAXMIN] find min and max values in column
     min_price = int(df["PRICE"].min())
     max_price = int(df["PRICE"].max())
 
@@ -167,6 +188,7 @@ def main():
     bed_min = int(beds_series.min())
     bed_max = int(beds_series.max())
 
+    # [ST2] slider widget
     bed_min_sel, bed_max_sel = st.sidebar.slider(
         "Number of Bedrooms",
         min_value=bed_min,
@@ -178,11 +200,13 @@ def main():
     # bathrooms
     baths_unique = sorted(df["BATH"].dropna().unique().tolist())
     bath_options = ["Any"] + baths_unique
+    # [ST1] dropdown / selectbox
     bath_choice = st.sidebar.selectbox("Bathrooms", bath_options)
 
     # locality
     locality_unique = df["LOCALITY"].dropna().unique().tolist()
     locality_unique.sort()
+    # [LISTCOMP] list comprehension
     locality_options = ["All"] + [loc for loc in locality_unique]
     locality_choice = st.sidebar.selectbox("Location", locality_options)
 
@@ -225,8 +249,10 @@ def main():
 
     # ------------ TABLE ------------
     if count > 0:
+        # [SORT] sort data by one column
+        sorted_df = filtered_df.sort_values("PRICE", ascending=False)
         st.dataframe(
-            filtered_df[
+            sorted_df[
                 [
                     "STATUS",
                     "PROPERTY_TYPE",
@@ -245,11 +271,18 @@ def main():
     if count > 0:
         local_counts = filtered_df["LOCALITY"].value_counts().head(10)
 
+        # [DICTMETHOD] use dictionary methods on value_counts result
+        local_counts_dict = local_counts.to_dict()
+        local_names = list(local_counts_dict.keys())
+        local_values = list(local_counts_dict.values())
+
+        # [CHART1] bar chart
         fig, ax = plt.subplots()
         ax.bar(local_counts.index, local_counts.values)
         plt.xticks(rotation=45, ha="right")
         ax.set_ylabel("Count")
         ax.set_xlabel("Locality")
+        ax.set_title("Top 10 Localities by Number of Listings")
         plt.tight_layout()
         st.pyplot(fig)
     else:
@@ -259,13 +292,16 @@ def main():
     st.subheader("Histogram (Prices of Housing Options)")
 
     if count > 0:
+        # [CHART2] second chart type (histogram)
         fig2, ax2 = plt.subplots()
         ax2.hist(filtered_df["PRICE"], bins=20)
 
-        # I got help with this to get it out of scientific notation and put them into to normal numbers to make it easier to read.
+        # I got help with this to get it out of scientific notation and put them into normal
+        # numbers to make it easier to read.
+        # [LAMBDA] lambda function inside FuncFormatter
         ax2.ticklabel_format(style='plain', axis='x')
         ax2.get_xaxis().set_major_formatter(
-            plt.FuncFormatter(lambda x, _: f"{int(x):,}")
+            FuncFormatter(lambda x, _: f"{int(x):,}")
         )
 
         ax2.set_xlabel("Price ($)")
@@ -281,6 +317,7 @@ def main():
     st.subheader("Map of Properties")
 
     if count > 0:
+        # [MAP] detailed map using PyDeck
         layer = pdk.Layer(
             "ScatterplotLayer",
             data=filtered_df,
