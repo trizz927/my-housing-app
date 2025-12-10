@@ -1,8 +1,8 @@
 """
-Name:       Your Name
-CS230:      Section XXX
+Name:       Tyler Rizzitano
+CS230:      Section 3
 Data:       New York Housing Market (NY-House-Dataset.csv)
-URL:        (add your Streamlit Cloud URL here)
+URL:        https://trizz927-my-housing-app.streamlit.app/
 
 Description:
 This Streamlit app explores New York housing data. The user can filter homes
