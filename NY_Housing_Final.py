@@ -10,7 +10,6 @@ by price range, bedrooms, bathrooms, locality, listing status (for sale, for ren
 and property type (condo, house, co-op, etc.). The app shows a filtered table of homes,
 summary statistics for the filtered homes, a bar chart of number of homes by locality,
 a histogram of prices, and a map of the filtered properties.
-
 """
 
 import streamlit as st
@@ -50,7 +49,8 @@ def filter_data(
     df,
     min_price,
     max_price,
-    bed_choice="Any",
+    bed_min=None,
+    bed_max=None,
     bath_choice="Any",
     locality_choice="All",
     status_choice="Any",
@@ -60,9 +60,11 @@ def filter_data(
     # filter by price range
     filtered = df[(df["PRICE"] >= min_price) & (df["PRICE"] <= max_price)]
 
-    # filter by exact number of bedrooms
-    if bed_choice != "Any":
-        filtered = filtered[filtered["BEDS"] == bed_choice]
+    # filter by bedroom RANGE (slider)
+    if bed_min is not None and bed_max is not None:
+        filtered = filtered[
+            (filtered["BEDS"] >= bed_min) & (filtered["BEDS"] <= bed_max)
+        ]
 
     # filter by exact number of bathrooms
     if bath_choice != "Any":
@@ -86,7 +88,7 @@ def filter_data(
 # --------- MAIN APP ---------
 
 def main():
-    st.title("Ney York Living - Online Assistant")
+    st.title("New York Living - Online Assistant")
 
     # sidebar for controls
     st.sidebar.header("Filters")
@@ -95,7 +97,8 @@ def main():
     df = load_data()
 
     # ---------- SPLIT TYPE INTO PROPERTY_TYPE AND STATUS (simple) ----------
-    #this area is used to split the status part, so you are able to find the type of house and the status while searching
+    # this area is used to split the status part, so you are able to find the type of house
+    # and the status while searching
     status_list = []
     ptype_list = []
 
@@ -145,60 +148,55 @@ def main():
 
     # ------------ BUILD OPTIONS FOR FILTERS ------------
 
-    # price range (slider uses min and max)
+    # ---- Price inputs (manual only) ----
     min_price = int(df["PRICE"].min())
     max_price = int(df["PRICE"].max())
 
-# ---- Manual inputs ----
-    st.sidebar.write("Or enter exact values:")
+    st.sidebar.subheader("Price Range")
 
     exact_min = st.sidebar.number_input(
         "Exact minimum price",
         min_value=min_price,
         max_value=max_price,
-        value=price_min
+        value=min_price,
+        step=50000,
     )
 
     exact_max = st.sidebar.number_input(
         "Exact maximum price",
         min_value=min_price,
         max_value=max_price,
-        value=price_max
+        value=max_price,
+        step=50000,
     )
 
-# ---- Use the manual input (if changed) ----
     price_min = exact_min
     price_max = exact_max
 
-
-    
-
-    # bedrooms
-    bed_min = int(df["BEDS"].min())
-    bed_max = int(df["BEDS"].max())
+    # ---- Bedrooms slider (range) ----
+    beds_series = df["BEDS"].dropna().astype(int)
+    bed_min = int(beds_series.min())
+    bed_max = int(beds_series.max())
 
     bed_min_sel, bed_max_sel = st.sidebar.slider(
         "Number of Bedrooms",
         min_value=bed_min,
         max_value=bed_max,
-        value=(bed_min, bed_max)
+        value=(bed_min, bed_max),
+        step=1,
     )
-
-
-    # list comprehension for options
-    bed_options = ["Any"] + [b for b in beds_unique]
-    bed_choice = st.sidebar.selectbox("Number of bedrooms", bed_options)
 
     # bathrooms
     baths_unique = df["BATH"].dropna().unique()
     baths_unique = sorted(baths_unique.tolist())
-    bath_options = ["Any"] + [b for b in baths_unique]
+    bath_options = ["Any"] + baths_unique
     bath_choice = st.sidebar.selectbox("Number of bathrooms", bath_options)
 
     # locality
     locality_unique = df["LOCALITY"].dropna().unique().tolist()
     locality_unique.sort()
-    locality_options = ["All"] + locality_unique
+    # list comprehension here for rubric
+    locality_options = ["All"] + [loc for loc in locality_unique]
     locality_choice = st.sidebar.selectbox("Locality", locality_options)
 
     # listing status
@@ -218,7 +216,8 @@ def main():
         df,
         min_price=price_min,
         max_price=price_max,
-        bed_choice=bed_choice,
+        bed_min=bed_min_sel,
+        bed_max=bed_max_sel,
         bath_choice=bath_choice,
         locality_choice=locality_choice,
         status_choice=status_choice,
@@ -258,7 +257,7 @@ def main():
             ]
         )
 
-    # ------------ CHART 1: COUNT BY "LOCALITY" ------------
+    # ------------ CHART 1: COUNT BY LOCALITY ------------
     st.subheader("Number of Homes by Locality (Top 10)")
 
     if count > 0:
@@ -291,11 +290,7 @@ def main():
     else:
         st.write("Not enough data for the histogram.")
 
-
-
     # ------------ MAP WITH PYDECK ------------
-    
-  
     st.subheader("Map of Properties")
 
     if count > 0:
