@@ -6,10 +6,10 @@ URL:        (add your Streamlit Cloud URL here)
 
 Description:
 Simple Streamlit app to explore New York housing data.
-You can choose a price range, a specific number of bedrooms and bathrooms,
-a locality, a listing status (For sale, For rent, Sold, etc.), and a property type
-(Condo, Apartment, House, etc.). The app shows the filtered rows, summary
-statistics, two charts, and a map.
+User can filter by price range, bedrooms, bathrooms, locality,
+listing status (for sale, for rent, etc.), and property type
+(condo, house, co-op, etc.). The app shows a table, two charts,
+and a map.
 """
 
 import streamlit as st
@@ -27,13 +27,6 @@ def load_data():
     df = df[df["PRICE"] > 0]
 
     return df
-
-
-def get_min_max_price(df):
-    """Return minimum and maximum price in the dataset."""
-    min_price = int(df["PRICE"].min())
-    max_price = int(df["PRICE"].max())
-    return min_price, max_price
 
 
 def filter_data(
@@ -62,11 +55,11 @@ def filter_data(
     if locality_choice != "All":
         filtered = filtered[filtered["LOCALITY"] == locality_choice]
 
-    # filter by listing status (For sale, For rent, Sold, etc.)
+    # filter by listing status
     if status_choice != "Any":
         filtered = filtered[filtered["STATUS"] == status_choice]
 
-    # filter by property type (Condo, Apartment, House, etc.)
+    # filter by property type
     if ptype_choice != "Any":
         filtered = filtered[filtered["PROPERTY_TYPE"] == ptype_choice]
 
@@ -74,7 +67,7 @@ def filter_data(
 
 
 def get_summary_stats(filtered_df):
-    """Return count, average price, average beds for the filtered data."""
+    """Return count and average price and average beds."""
     if len(filtered_df) == 0:
         return 0, 0.0, 0.0
 
@@ -92,56 +85,59 @@ def main():
     # ------------ LOAD DATA ------------
     df = load_data()
 
-    # simple derived column (if square footage exists)
-    if "PROPERTYSQFT" in df.columns:
-        df["PRICE_PER_SQFT"] = df["PRICE"] / df["PROPERTYSQFT"]
-    else:
-        df["PRICE_PER_SQFT"] = None
-
-    # ------------ SPLIT TYPE INTO STATUS + PROPERTY_TYPE ------------
-    # TYPE looks like: "Condo for sale", "House for sale", "Co-op for sale", etc.
+    # ---------- SIMPLE SPLIT OF TYPE COLUMN ----------
+    # Example values in TYPE: "Condo for sale", "House for rent", "Co-op for sale"
     status_list = []
     ptype_list = []
 
     for value in df["TYPE"]:
-        status_value = "Unknown"
-        property_value = "Unknown"
-
         if isinstance(value, str):
             text = value.strip()
-            text_lower = text.lower()
+            words = text.lower().split()
 
-            if "for sale" in text_lower:
-                idx = text_lower.find("for sale")
-                property_value = text[:idx].strip()      # "Condo"
-                status_value = "For sale"
-            elif "for rent" in text_lower:
-                idx = text_lower.find("for rent")
-                property_value = text[:idx].strip()
-                status_value = "For rent"
-            elif "sold" in text_lower:
-                idx = text_lower.find("sold")
-                property_value = text[:idx].strip()
+            # CASE 1: something "for sale"
+            if "for" in words and "sale" in words:
+                parts = text.lower().split("for")
+                property_value = parts[0].strip().title()
+                status_value = "For " + parts[1].strip().title()
+
+            # CASE 2: something "for rent"
+            elif "for" in words and "rent" in words:
+                parts = text.lower().split("for")
+                property_value = parts[0].strip().title()
+                status_value = "For " + parts[1].strip().title()
+
+            # CASE 3: something "sold"
+            elif "sold" in words:
+                parts = text.lower().split("sold")
+                property_value = parts[0].strip().title()
                 status_value = "Sold"
-            elif "pending" in text_lower:
-                idx = text_lower.find("pending")
-                property_value = text[:idx].strip()
+
+            # CASE 4: something "pending"
+            elif "pending" in words:
+                parts = text.lower().split("pending")
+                property_value = parts[0].strip().title()
                 status_value = "Pending"
+
+            # OTHER CASES
             else:
-                # if we don't recognize words like "for sale", treat whole thing as type
-                property_value = text
+                property_value = text.title()
                 status_value = "Other"
+        else:
+            property_value = "Unknown"
+            status_value = "Unknown"
 
-        status_list.append(status_value)
         ptype_list.append(property_value)
+        status_list.append(status_value)
 
-    df["STATUS"] = status_list
     df["PROPERTY_TYPE"] = ptype_list
+    df["STATUS"] = status_list
 
     # ------------ BUILD OPTIONS FOR FILTERS ------------
 
-    # price range
-    min_price, max_price = get_min_max_price(df)
+    # price range (slider)
+    min_price = int(df["PRICE"].min())
+    max_price = int(df["PRICE"].max())
 
     price_min, price_max = st.sidebar.slider(
         "Price range ($)",
@@ -151,7 +147,7 @@ def main():
         step=50000,
     )
 
-    # bedrooms (convert to int list)
+    # bedrooms
     beds_unique = df["BEDS"].dropna().unique()
     beds_unique = sorted(beds_unique.astype(int).tolist())
     bed_options = ["Any"]
@@ -159,7 +155,7 @@ def main():
         bed_options.append(b)
     bed_choice = st.sidebar.selectbox("Number of bedrooms", bed_options)
 
-    # bathrooms (can be floats like 1.5)
+    # bathrooms
     baths_unique = df["BATH"].dropna().unique()
     baths_unique = sorted(baths_unique.tolist())
     bath_options = ["Any"]
@@ -229,30 +225,23 @@ def main():
                     "PRICE",
                     "BEDS",
                     "BATH",
-                    "PROPERTYSQFT",
                     "LOCALITY",
                     "ADDRESS",
-                    "PRICE_PER_SQFT",
                 ]
             ]
         )
 
-    # ------------ CHART 1: AVERAGE PRICE BY LOCALITY ------------
-    st.subheader("Average Price by Locality (Top 10)")
+    # ------------ SIMPLE CHART 1: COUNT BY LOCALITY ------------
+    st.subheader("Number of Homes by Locality (Top 10)")
 
     if count > 0:
-        avg_by_loc = (
-            filtered_df.groupby("LOCALITY")["PRICE"]
-            .mean()
-            .sort_values(ascending=False)
-            .head(10)
-        )
+        loc_counts = filtered_df["LOCALITY"].value_counts().head(10)
 
         fig, ax = plt.subplots()
-        ax.bar(avg_by_loc.index, avg_by_loc.values)
-        ax.set_ylabel("Average Price ($)")
+        ax.bar(loc_counts.index, loc_counts.values)
+        ax.set_ylabel("Number of homes")
         ax.set_xlabel("Locality")
-        ax.set_title("Top Localities by Average Price")
+        ax.set_title("Top 10 Localities by Number of Listings")
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
 
@@ -260,7 +249,7 @@ def main():
     else:
         st.write("Not enough data for this chart.")
 
-    # ------------ CHART 2: PRICE HISTOGRAM ------------
+    # ------------ SIMPLE CHART 2: PRICE HISTOGRAM ------------
     st.subheader("Histogram of Prices (Filtered Data)")
 
     if count > 0:
@@ -275,7 +264,7 @@ def main():
     else:
         st.write("Not enough data for the histogram.")
 
-    # ------------ MAP WITH PYDECK ------------
+    # ------------ SIMPLE MAP WITH PYDECK ------------
     st.subheader("Map of Properties")
 
     if count > 0:
@@ -296,10 +285,6 @@ def main():
         deck = pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            tooltip={
-                "text": "Status: {STATUS}\nType: {PROPERTY_TYPE}\n"
-                        "Price: ${PRICE}\nBeds: {BEDS}\nBaths: {BATH}\n{ADDRESS}"
-            },
         )
 
         st.pydeck_chart(deck)
