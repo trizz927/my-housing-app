@@ -14,7 +14,8 @@ References:
 - Streamlit documentation: https://docs.streamlit.io/
 - Matplotlib documentation: https://matplotlib.org/
 - PyDeck documentation: https://deckgl.readthedocs.io/
-- ChatGpt with a few lines that I did not know how to do, also to give me a base line for streamlit examples to build on (items used are my own though)
+- ChatGpt with a few lines that I did not know how to do for example making the numbers not scientific notation,
+also to give me a base line for streamlit examples to build on (items used are my own though)
 -Youtube to help teach me streamlit while I was stuck because I was not there for the class.
 """
 
@@ -158,7 +159,7 @@ def main():
     st.write("Overall average price: $", round(total_avg_price, 2))
     st.write("Overall average beds:", round(total_avg_beds, 2))
 
-    # ------------ SIDEBAR FILTERS ------------
+    # Start of the side bar
 
     # manual price input because the slider was to clanky for this so I move that to a simpler number area
     # [MAXMIN] find min and max values in column
