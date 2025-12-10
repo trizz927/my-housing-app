@@ -5,31 +5,33 @@ Data:       New York Housing Market (NY-House-Dataset.csv)
 URL:        https://trizz927-my-housing-app.streamlit.app/
 
 Description:
-This Streamlit app explores New York housing data. The user can filter homes
-by price range, bedrooms, bathrooms, locality, listing status, and property type.
-The app shows a filtered table of homes, summary statistics, a bar chart by locality,
-a histogram of prices, and a map of the filtered properties.
+This program works like a basic version of Zillow, only New York. You choose the area you want to live in,
+the features you want in a home, and a price range. The app then shows you the homes that match 
+your filters, displays charts about prices and locations, and provides a map showing where the 
+properties are located.
 
 References:
 - Streamlit documentation: https://docs.streamlit.io/
 - Matplotlib documentation: https://matplotlib.org/
 - PyDeck documentation: https://deckgl.readthedocs.io/
+- ChatGpt with a few lines that I did not know how to do, also to give me a base line for streamlit examples to build on (items used are my own though)
+-Youtube to help teach me streamlit while I was stuck because I was not there for the class.
 """
 
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import pydeck as pdk
+#this was part of the ai usage below to get the numbers out of scientific notation
 from matplotlib.ticker import FuncFormatter
 
 
 # --------- FUNCTIONS ---------
-
+# read the data
 def load_data():
-    """Read the CSV file and clean it."""
     df = pd.read_csv("NY-House-Dataset.csv")
 
-    # remove rows with missing critical fields
+    # remove rows within the data set that had nothing to aviod issues
     df = df.dropna(subset=["PRICE", "LATITUDE", "LONGITUDE"])
     df = df[df["PRICE"] > 0]
 
@@ -37,6 +39,7 @@ def load_data():
 
 
 # [FUNCRETURN2] function that returns 2+ values
+# carrying on this is how you can compare your filtered items to.
 def get_summary_stats(df_input):
     """Return count, average price, average beds."""
     if len(df_input) == 0:
@@ -91,7 +94,7 @@ def filter_data(
     return filtered
 
 
-# --------- MAIN APP ---------
+# Start of the streamlit area to start making the app
 
 def main():
 
@@ -101,7 +104,7 @@ def main():
 
     df = load_data()
 
-    # ---------- SPLIT TYPE COLUMN ----------
+    # I wanted to split the for sale... and the housing type to make it an easeir search engine
     status_list = []
     ptype_list = []
 
@@ -147,7 +150,7 @@ def main():
     df["PROPERTY_TYPE"] = ptype_list
     df["STATUS"] = status_list
 
-    # ------------ OVERALL DATASET SUMMARY (2nd function call) ------------
+    # Overall data sumamry on app
     # [FUNCCALL2] get_summary_stats is called in 2+ places
     total_count, total_avg_price, total_avg_beds = get_summary_stats(df)
     st.subheader("Overall Dataset Summary")
@@ -157,7 +160,7 @@ def main():
 
     # ------------ SIDEBAR FILTERS ------------
 
-    # manual price input
+    # manual price input because the slider was to clanky for this so I move that to a simpler number area
     # [MAXMIN] find min and max values in column
     min_price = int(df["PRICE"].min())
     max_price = int(df["PRICE"].max())
@@ -222,7 +225,7 @@ def main():
     ptype_options = ["Any"] + ptype_unique
     ptype_choice = st.sidebar.selectbox("Property Type", ptype_options)
 
-    # ------------ FILTER DATA ------------
+    # Filtered data that shows the statistics on what you are searching for
     filtered_df = filter_data(
         df,
         min_price=price_min,
@@ -235,7 +238,7 @@ def main():
         ptype_choice=ptype_choice,
     )
 
-    # ------------ SUMMARY ------------
+    # Filter summary on what properties are available for what you are looking for
     st.subheader("Filtered Properties Summary")
 
     count, avg_price, avg_beds = get_summary_stats(filtered_df)
@@ -247,7 +250,7 @@ def main():
     else:
         st.write("No results match your filters.")
 
-    # ------------ TABLE ------------
+    # Table
     if count > 0:
         # [SORT] sort data by one column
         sorted_df = filtered_df.sort_values("PRICE", ascending=False)
@@ -265,7 +268,7 @@ def main():
             ]
         )
 
-    # ------------ BAR CHART ------------
+    # Start of the bar chart
     st.subheader("Number of Homes by Locality (Top 10)")
 
     if count > 0:
@@ -288,7 +291,7 @@ def main():
     else:
         st.write("Not enough data.")
 
-    # ------------ HISTOGRAM ------------
+    #Start of the histogram
     st.subheader("Histogram (Prices of Housing Options)")
 
     if count > 0:
@@ -313,7 +316,7 @@ def main():
     else:
         st.write("Not enough data for histogram.")
 
-    # ------------ MAP ------------
+    # map where the info was inspired by the example we did in class
     st.subheader("Map of Properties")
 
     if count > 0:
@@ -322,7 +325,7 @@ def main():
             "ScatterplotLayer",
             data=filtered_df,
             get_position="[LONGITUDE, LATITUDE]",
-            get_radius=60,
+            get_radius=67,
             get_color=[200, 0, 0],
         )
 
