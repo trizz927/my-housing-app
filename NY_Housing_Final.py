@@ -101,7 +101,7 @@ def main():
 
     st.title("New York Living - Online Assistant")
     # [ST3] use sidebar for layout
-    st.sidebar.header("Filters")
+    st.sidebar.header("Options for housing")
 
     df = load_data()
 
