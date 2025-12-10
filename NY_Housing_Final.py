@@ -184,7 +184,7 @@ def main():
     locality_unique = df["LOCALITY"].dropna().unique().tolist()
     locality_unique.sort()
     locality_options = ["All"] + [loc for loc in locality_unique]
-    locality_choice = st.sidebar.selectbox("Locality", locality_options)
+    locality_choice = st.sidebar.selectbox("Location", locality_options)
 
     # status
     status_unique = df["STATUS"].dropna().unique().tolist()
@@ -256,7 +256,7 @@ def main():
         st.write("Not enough data.")
 
     # ------------ HISTOGRAM ------------
-    st.subheader("Histogram of Prices (Filtered Data)")
+    st.subheader("Histogram (Prices of Housing Options)")
 
     if count > 0:
         fig2, ax2 = plt.subplots()
