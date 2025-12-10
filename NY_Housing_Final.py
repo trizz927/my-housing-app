@@ -254,14 +254,15 @@ def main():
     # ------------ CHART 2: PRICE HISTOGRAM ------------
 st.subheader("Histogram (Price of Homes)")
 
-if count > 0:
+# use the filtered data directly
+if len(filtered_df) > 0:
     fig2, ax2 = plt.subplots()
     ax2.hist(filtered_df["PRICE"], bins=20)
 
-    # 🔥 Match x-axis to the slider!
-    ax2.set_xlim(min_price, max_price)
+    # 🔥 Make x-axis match the price slider range
+    ax2.set_xlim(price_min, price_max)
 
-    # Make numbers readable
+    # keep numbers simple (no scientific notation)
     ax2.ticklabel_format(style='plain', axis='x')
     ax2.get_xaxis().set_major_formatter(
         plt.FuncFormatter(lambda x, _: f"{int(x):,}")
