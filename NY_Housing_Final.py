@@ -6,9 +6,8 @@ URL:        (add your Streamlit Cloud URL here)
 
 Description:
 This Streamlit app explores New York housing data. The user can filter homes
-by price range, bedrooms, bathrooms, locality, listing status (for sale, for rent, etc.),
-and property type (condo, house, co-op, etc.). The app shows a filtered table of homes,
-summary statistics for the filtered homes, a bar chart of number of homes by locality,
+by price range, bedrooms, bathrooms, locality, listing status, and property type.
+The app shows a filtered table of homes, summary statistics, a bar chart by locality,
 a histogram of prices, and a map of the filtered properties.
 """
 
@@ -20,21 +19,19 @@ import pydeck as pdk
 
 # --------- FUNCTIONS ---------
 
-# function to load and clean data
 def load_data():
-    """Read the CSV file and do small cleaning."""
+    """Read the CSV file and clean it."""
     df = pd.read_csv("NY-House-Dataset.csv")
 
-    # keep only rows with price and coordinates
+    # remove rows with missing critical fields
     df = df.dropna(subset=["PRICE", "LATITUDE", "LONGITUDE"])
     df = df[df["PRICE"] > 0]
 
     return df
 
 
-# function with 2+ parameters and return of 2+ values
-def get_summary_stats(df_input, label="filtered"):
-    """Return count, average price, average beds for a given DataFrame."""
+def get_summary_stats(df_input):
+    """Return count, average price, average beds."""
     if len(df_input) == 0:
         return 0, 0.0, 0.0
 
@@ -44,7 +41,6 @@ def get_summary_stats(df_input, label="filtered"):
     return count, avg_price, avg_beds
 
 
-# function with several parameters and defaults that filters the data
 def filter_data(
     df,
     min_price,
@@ -57,28 +53,29 @@ def filter_data(
     ptype_choice="Any",
 ):
     """Filter the DataFrame based on user choices."""
-    # filter by price range
+    
+    # price filtering
     filtered = df[(df["PRICE"] >= min_price) & (df["PRICE"] <= max_price)]
 
-    # filter by bedroom RANGE (slider)
+    # bedroom RANGE filtering
     if bed_min is not None and bed_max is not None:
         filtered = filtered[
             (filtered["BEDS"] >= bed_min) & (filtered["BEDS"] <= bed_max)
         ]
 
-    # filter by exact number of bathrooms
+    # bathrooms
     if bath_choice != "Any":
         filtered = filtered[filtered["BATH"] == bath_choice]
 
-    # filter by locality
+    # locality
     if locality_choice != "All":
         filtered = filtered[filtered["LOCALITY"] == locality_choice]
 
-    # filter by listing status
+    # status
     if status_choice != "Any":
         filtered = filtered[filtered["STATUS"] == status_choice]
 
-    # filter by property type
+    # property type
     if ptype_choice != "Any":
         filtered = filtered[filtered["PROPERTY_TYPE"] == ptype_choice]
 
@@ -88,17 +85,13 @@ def filter_data(
 # --------- MAIN APP ---------
 
 def main():
-    st.title("New York Living - Online Assistant")
 
-    # sidebar for controls
+    st.title("New York Living - Online Assistant")
     st.sidebar.header("Filters")
 
-    # ------------ LOAD DATA ------------
     df = load_data()
 
-    # ---------- SPLIT TYPE INTO PROPERTY_TYPE AND STATUS (simple) ----------
-    # this area is used to split the status part, so you are able to find the type of house
-    # and the status while searching
+    # ---------- SPLIT TYPE COLUMN ----------
     status_list = []
     ptype_list = []
 
@@ -108,34 +101,30 @@ def main():
             text_lower = text.lower()
             words = text_lower.split()
 
-            # "something for sale"
             if "for sale" in text_lower:
                 parts = text_lower.split("for sale")
                 property_value = parts[0].strip().title()
                 status_value = "For Sale"
 
-            # "something for rent"
             elif "for rent" in text_lower:
                 parts = text_lower.split("for rent")
                 property_value = parts[0].strip().title()
                 status_value = "For Rent"
 
-            # "something sold"
             elif "sold" in words:
                 parts = text_lower.split("sold")
                 property_value = parts[0].strip().title()
                 status_value = "Sold"
 
-            # "something pending"
             elif "pending" in words:
                 parts = text_lower.split("pending")
                 property_value = parts[0].strip().title()
                 status_value = "Pending"
 
-            # other cases
             else:
                 property_value = text.title()
                 status_value = "Other"
+
         else:
             property_value = "Unknown"
             status_value = "Unknown"
@@ -146,9 +135,9 @@ def main():
     df["PROPERTY_TYPE"] = ptype_list
     df["STATUS"] = status_list
 
-    # ------------ BUILD OPTIONS FOR FILTERS ------------
+    # ------------ SIDEBAR FILTERS ------------
 
-    # ---- Price inputs (manual only) ----
+    # manual price input
     min_price = int(df["PRICE"].min())
     max_price = int(df["PRICE"].max())
 
@@ -173,7 +162,7 @@ def main():
     price_min = exact_min
     price_max = exact_max
 
-    # ---- Bedrooms slider (range) ----
+    # bedroom slider
     beds_series = df["BEDS"].dropna().astype(int)
     bed_min = int(beds_series.min())
     bed_max = int(beds_series.max())
@@ -187,29 +176,27 @@ def main():
     )
 
     # bathrooms
-    baths_unique = df["BATH"].dropna().unique()
-    baths_unique = sorted(baths_unique.tolist())
+    baths_unique = sorted(df["BATH"].dropna().unique().tolist())
     bath_options = ["Any"] + baths_unique
-    bath_choice = st.sidebar.selectbox("Number of bathrooms", bath_options)
+    bath_choice = st.sidebar.selectbox("Bathrooms", bath_options)
 
     # locality
     locality_unique = df["LOCALITY"].dropna().unique().tolist()
     locality_unique.sort()
-    # list comprehension here for rubric
     locality_options = ["All"] + [loc for loc in locality_unique]
     locality_choice = st.sidebar.selectbox("Locality", locality_options)
 
-    # listing status
+    # status
     status_unique = df["STATUS"].dropna().unique().tolist()
     status_unique.sort()
     status_options = ["Any"] + status_unique
-    status_choice = st.sidebar.selectbox("Listing status", status_options)
+    status_choice = st.sidebar.selectbox("Listing Status", status_options)
 
     # property type
     ptype_unique = df["PROPERTY_TYPE"].dropna().unique().tolist()
     ptype_unique.sort()
     ptype_options = ["Any"] + ptype_unique
-    ptype_choice = st.sidebar.selectbox("Property type", ptype_options)
+    ptype_choice = st.sidebar.selectbox("Property Type", ptype_options)
 
     # ------------ FILTER DATA ------------
     filtered_df = filter_data(
@@ -224,24 +211,19 @@ def main():
         ptype_choice=ptype_choice,
     )
 
-    # ------------ FILTERED STATS (ONLY) ------------
+    # ------------ SUMMARY ------------
     st.subheader("Filtered Properties Summary")
 
     count, avg_price, avg_beds = get_summary_stats(filtered_df)
     st.write("Number of properties:", count)
 
     if count > 0:
-        st.write("Average price of filtered homes: $", round(avg_price, 2))
-        st.write("Average number of bedrooms:", round(avg_beds, 2))
+        st.write("Average price: $", round(avg_price, 2))
+        st.write("Average beds:", round(avg_beds, 2))
     else:
-        st.write("No rows match these filters.")
+        st.write("No results match your filters.")
 
-    st.write(
-        "Use the filters in the sidebar to search for homes by price range, "
-        "bedrooms, bathrooms, area, listing status, and property type."
-    )
-
-    # ------------ FILTERED TABLE ------------
+    # ------------ TABLE ------------
     if count > 0:
         st.dataframe(
             filtered_df[
@@ -257,7 +239,7 @@ def main():
             ]
         )
 
-    # ------------ CHART 1: COUNT BY LOCALITY ------------
+    # ------------ BAR CHART ------------
     st.subheader("Number of Homes by Locality (Top 10)")
 
     if count > 0:
@@ -265,32 +247,36 @@ def main():
 
         fig, ax = plt.subplots()
         ax.bar(local_counts.index, local_counts.values)
-        ax.set_ylabel("Number of homes")
-        ax.set_xlabel("Locality")
-        ax.set_title("Top 10 Localities by Number of Listings")
         plt.xticks(rotation=45, ha="right")
+        ax.set_ylabel("Count")
+        ax.set_xlabel("Locality")
         plt.tight_layout()
-
         st.pyplot(fig)
     else:
-        st.write("Not enough data for this chart.")
+        st.write("Not enough data.")
 
-    # ------------ CHART 2: PRICE HISTOGRAM ------------
+    # ------------ HISTOGRAM ------------
     st.subheader("Histogram of Prices (Filtered Data)")
 
     if count > 0:
         fig2, ax2 = plt.subplots()
         ax2.hist(filtered_df["PRICE"], bins=20)
+
+        # 🔥 turn off scientific notation + add commas
+        ax2.ticklabel_format(style='plain', axis='x')
+        ax2.get_xaxis().set_major_formatter(
+            plt.FuncFormatter(lambda x, _: f"{int(x):,}")
+        )
+
         ax2.set_xlabel("Price ($)")
         ax2.set_ylabel("Number of properties")
         ax2.set_title("Distribution of Prices")
         plt.tight_layout()
-
         st.pyplot(fig2)
     else:
-        st.write("Not enough data for the histogram.")
+        st.write("Not enough data for histogram.")
 
-    # ------------ MAP WITH PYDECK ------------
+    # ------------ MAP ------------
     st.subheader("Map of Properties")
 
     if count > 0:
@@ -298,14 +284,14 @@ def main():
             "ScatterplotLayer",
             data=filtered_df,
             get_position="[LONGITUDE, LATITUDE]",
-            get_radius=100,
+            get_radius=60,
             get_color=[200, 0, 0],
         )
 
         view_state = pdk.ViewState(
             longitude=float(filtered_df["LONGITUDE"].mean()),
             latitude=float(filtered_df["LATITUDE"].mean()),
-            zoom=9,
+            zoom=10,
         )
 
         deck = pdk.Deck(
@@ -315,7 +301,7 @@ def main():
 
         st.pydeck_chart(deck)
     else:
-        st.write("No locations to show on the map.")
+        st.write("No map data.")
 
 
 if __name__ == "__main__":
